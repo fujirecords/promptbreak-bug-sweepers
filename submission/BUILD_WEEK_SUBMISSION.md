@@ -145,7 +145,7 @@ The biggest pass/fail communication risk is that the game does not use an OpenAI
 ```text
 LIVE DEMO URL: https://promptbreak-bug-sweepers.k-fuji.chatgpt.site
 REPOSITORY URL: https://github.com/fujirecords/promptbreak-bug-sweepers
-PUBLIC YOUTUBE URL: [ADD AFTER APPROVAL]
+PUBLIC YOUTUBE URL: https://youtu.be/vFpkU2iUuqI
 PRIMARY CODEX /feedback SESSION ID: 019f7b07-3aa7-7f33-86c8-fdbcf26ff4b5
 ENTRANT / TEAM NAME: [ADD]
 ```
@@ -269,7 +269,7 @@ Codex, GPT-5.6, TypeScript, React, Three.js, Vite, Cloudflare Workers
 ```text
 Demo: https://promptbreak-bug-sweepers.k-fuji.chatgpt.site
 Repository: https://github.com/fujirecords/promptbreak-bug-sweepers
-Video: [PUBLIC YOUTUBE URL]
+Video: https://youtu.be/vFpkU2iUuqI
 Primary Codex /feedback Session ID: 019f7b07-3aa7-7f33-86c8-fdbcf26ff4b5
 ```
 
