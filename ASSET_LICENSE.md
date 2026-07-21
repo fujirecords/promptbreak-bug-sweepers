@@ -2,6 +2,6 @@
 
 The MIT License in this repository applies to source code only.
 
-Original Patchling images under `public/assets/companions/` were generated specifically for this project and are licensed under the Creative Commons Attribution-NonCommercial 4.0 International license.
+All image assets under `public/assets/` were created or generated specifically for PromptBreak: Bug Sweepers. They are licensed under the Creative Commons Attribution-NonCommercial 4.0 International license. Redistribution is permitted with attribution for non-commercial use; reuse outside the project must retain this notice and the CC BY-NC 4.0 terms.
 
-Other files under `public/assets/` are provided solely for viewing and testing this project. They are not licensed for redistribution or reuse outside this project.
+No official character, logo, or other third-party mascot asset is included in this edition.
