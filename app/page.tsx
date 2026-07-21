@@ -29,6 +29,14 @@ type PickupKind = "bomb" | "repair" | "overclock";
 type Pickup = { mesh: THREE.Group; kind: PickupKind; born: number };
 type Hazard = { mesh: THREE.Mesh; velocity: THREE.Vector3; born: number; damage: number };
 type CombatFx = { object: THREE.Object3D; life: number; maxLife: number; velocity?: THREE.Vector3; grow?: number };
+type TeamAlly = {
+  mesh: THREE.Group;
+  pet: (typeof PETS)[number];
+  entry: THREE.Vector3;
+  formation: THREE.Vector3;
+  target: Enemy | null;
+  struck: boolean;
+};
 type Obstacle = { x: number; z: number; halfX: number; halfZ: number; mesh: THREE.Mesh; hp: number; active: boolean };
 type LeaderboardEntry = { stage: number; hard: boolean; handle: string; score: number; level: number; kills: number; time: number; at: number };
 type Cinematic = "team" | "boss" | null;
@@ -61,6 +69,18 @@ const PET_SKILLS: Record<PetId, { name: string; ja: string; en: string }> = {
   parcel: { name: "TOOL DROP", ja: "工具箱を上空から連続投下", en: "Drops a barrage of packed tools" },
   chroma: { name: "PRISM FREEZE", ja: "周囲の処理をプリズム凍結させる", en: "Freezes nearby processes in a prism pulse" },
   hollow: { name: "EVENT HORIZON", ja: "敵を吸い込む日食領域を展開", en: "Deploys an eclipse that pulls bugs inward" },
+};
+
+const PET_MOTION: Record<PetId, { walk: number; bounce: number; sway: number; lean: number; idle: number; idleLift: number; idleSway: number; phase: number }> = {
+  relay:  { walk: 15.8, bounce: 0.105, sway: 0.050, lean: 0.075, idle: 5.2, idleLift: 0.042, idleSway: 0.024, phase: 0.0 },
+  tidal:  { walk: 14.2, bounce: 0.120, sway: 0.058, lean: 0.090, idle: 4.8, idleLift: 0.050, idleSway: 0.028, phase: 0.7 },
+  kiln:   { walk: 17.2, bounce: 0.115, sway: 0.046, lean: 0.105, idle: 6.0, idleLift: 0.046, idleSway: 0.022, phase: 1.4 },
+  vector: { walk: 18.0, bounce: 0.082, sway: 0.042, lean: 0.125, idle: 5.6, idleLift: 0.035, idleSway: 0.020, phase: 2.1 },
+  anvil:  { walk: 11.8, bounce: 0.075, sway: 0.070, lean: 0.055, idle: 4.2, idleLift: 0.030, idleSway: 0.032, phase: 2.8 },
+  lumen:  { walk: 13.5, bounce: 0.130, sway: 0.052, lean: 0.080, idle: 4.6, idleLift: 0.055, idleSway: 0.025, phase: 3.5 },
+  parcel: { walk: 12.8, bounce: 0.092, sway: 0.066, lean: 0.065, idle: 4.4, idleLift: 0.038, idleSway: 0.030, phase: 4.2 },
+  chroma: { walk: 16.4, bounce: 0.088, sway: 0.044, lean: 0.115, idle: 5.0, idleLift: 0.036, idleSway: 0.021, phase: 4.9 },
+  hollow: { walk: 12.2, bounce: 0.100, sway: 0.038, lean: 0.060, idle: 3.8, idleLift: 0.060, idleSway: 0.018, phase: 5.6 },
 };
 
 const UPGRADE_IDS: UpgradeId[] = ["power", "range", "orbit", "flame", "pulse", "chain", "boomerang", "shutdown", "helper", "haste", "speed", "magnet", "vitality", "repair"];
@@ -346,7 +366,7 @@ function makePet(petId: PetId, atlases: PetTextures, scale = 1) {
   const material = new THREE.SpriteMaterial({ map: maps.front[0], transparent: true, alphaTest: 0.035, depthWrite: false });
   const sprite = new THREE.Sprite(material);
   sprite.name = "pet-art";
-  sprite.userData = { maps, facing: "front" as PetFacing, frame: 0, baseScale: 2.12 * scale };
+  sprite.userData = { maps, facing: "front" as PetFacing, frame: 0, baseScale: 2.12 * scale, petId };
   sprite.center.set(0.5, 0.08);
   sprite.scale.set(2.12 * scale, 2.12 * scale, 1);
   sprite.renderOrder = 4;
@@ -357,47 +377,69 @@ function makePet(petId: PetId, atlases: PetTextures, scale = 1) {
   );
   glow.rotation.x = -Math.PI / 2;
   glow.position.y = 0.025;
+  glow.name = "pet-shadow";
+  glow.userData.baseScale = scale;
   group.add(glow);
+  group.userData.petId = petId;
   return group;
 }
 
-function setPetFacing(group: THREE.Group, direction: THREE.Vector3, walking: boolean, elapsed = 0) {
+function setPetFacing(group: THREE.Group, direction: THREE.Vector3, walking: boolean, elapsed = 0, distanceMoved?: number) {
   const sprite = group.getObjectByName("pet-art") as THREE.Sprite | undefined;
   if (!sprite) return;
+  const petId = (sprite.userData.petId ?? group.userData.petId ?? "relay") as PetId;
+  const motion = PET_MOTION[petId] ?? PET_MOTION.relay;
   if (walking) {
     let facing: PetFacing;
-    if (Math.abs(direction.x) > Math.abs(direction.z) * 0.7) facing = direction.x < 0 ? "left" : "right";
+    if (Math.abs(direction.x) >= Math.abs(direction.z) * 0.62) facing = direction.x < 0 ? "left" : "right";
     else facing = direction.z < 0 ? "back" : "front";
     sprite.userData.facing = facing;
-    sprite.userData.diagonal = Math.abs(direction.x) > 0.25 && Math.abs(direction.z) > 0.25;
+    sprite.userData.diagonal = Math.abs(direction.x) > 0.28 && Math.abs(direction.z) > 0.28;
     sprite.userData.travelX = direction.x;
+    sprite.userData.travelZ = direction.z;
   } else {
     sprite.userData.diagonal = false;
     sprite.userData.travelX = 0;
+    sprite.userData.travelZ = 0;
   }
-  const frame = walking ? Math.floor(elapsed * 7.5) % 2 : 0;
+  const previousGait = Number(sprite.userData.gaitPhase) || motion.phase;
+  const motionClock = walking
+    ? (distanceMoved === undefined ? elapsed * motion.walk + motion.phase : previousGait + distanceMoved * 2.7)
+    : elapsed * motion.idle + motion.phase;
+  if (walking) sprite.userData.gaitPhase = motionClock;
+  const frame = Math.floor(Math.abs(motionClock) / Math.PI) % 2;
   if (sprite.userData.frame !== frame || (sprite.material as THREE.SpriteMaterial).map !== sprite.userData.maps[sprite.userData.facing][frame]) {
     sprite.userData.frame = frame;
     (sprite.material as THREE.SpriteMaterial).map = sprite.userData.maps[sprite.userData.facing][frame];
     (sprite.material as THREE.SpriteMaterial).needsUpdate = true;
   }
   const base = sprite.userData.baseScale as number;
-  const cadence = walking ? 17 : 5.2;
-  const step = Math.sin(elapsed * cadence);
-  const weightShift = Math.sin(elapsed * cadence * 0.5);
+  const step = Math.sin(motionClock);
+  const foot = Math.sin(motionClock * 0.5);
+  const weightShift = Math.sign(foot || 1) * Math.pow(Math.abs(foot), 0.7);
   const material = sprite.material as THREE.SpriteMaterial;
+  const diagonal = Boolean(sprite.userData.diagonal);
+  const travelX = Number(sprite.userData.travelX) || 0;
+  const travelZ = Number(sprite.userData.travelZ) || 0;
   if (walking) {
-    const diagonal = Boolean(sprite.userData.diagonal);
-    const travelX = Number(sprite.userData.travelX) || 0;
-    sprite.position.y = 0.025 + Math.abs(step) * 0.1;
-    sprite.position.x = weightShift * 0.035;
-    sprite.scale.set(base * (diagonal ? 0.94 : 1) * (1 + Math.abs(step) * 0.022), base * (1 - Math.abs(step) * 0.03), 1);
-    material.rotation = weightShift * 0.07 - travelX * (diagonal ? 0.045 : 0.018);
+    const stride = Math.abs(step);
+    sprite.position.y = 0.022 + stride * motion.bounce;
+    sprite.position.x = weightShift * motion.sway + (diagonal ? travelX * 0.035 : 0);
+    sprite.scale.set(base * (diagonal ? 0.93 : 1) * (1 + stride * 0.035), base * (1 - stride * 0.055), 1);
+    material.rotation = weightShift * motion.lean - travelX * (diagonal ? 0.075 : 0.025) + travelZ * travelX * 0.025;
   } else {
-    sprite.position.y = 0.018 + Math.abs(step) * 0.04;
-    sprite.position.x = weightShift * 0.018;
-    sprite.scale.set(base * (1 + Math.abs(step) * 0.012), base * (1 - Math.abs(step) * 0.015), 1);
-    material.rotation = weightShift * 0.025;
+    const planted = Math.abs(step);
+    sprite.position.y = 0.016 + planted * motion.idleLift;
+    sprite.position.x = weightShift * motion.idleSway;
+    sprite.scale.set(base * (1 + planted * 0.024), base * (1 - planted * 0.032), 1);
+    material.rotation = weightShift * motion.lean * 0.42;
+  }
+  const shadow = group.getObjectByName("pet-shadow") as THREE.Mesh | undefined;
+  if (shadow) {
+    const contact = walking ? 1 - Math.abs(step) * 0.14 : 1 - Math.abs(step) * 0.07;
+    shadow.scale.set(contact, contact, 1);
+    const shadowMaterial = shadow.material as THREE.MeshBasicMaterial;
+    shadowMaterial.opacity = walking ? 0.12 + contact * 0.05 : 0.14 + contact * 0.035;
   }
 }
 
@@ -495,6 +537,10 @@ export default function Home() {
     outbreakTriggered: boolean;
     outbreakRemaining: number;
     specialActive: boolean;
+    teamAllies: TeamAlly[];
+    teamSpecialStartedAt: number;
+    teamFinaleDone: boolean;
+    teamBannerPhase: number;
     specialCooldown: number;
     pulseTimer: number;
     chainTimer: number;
@@ -739,7 +785,7 @@ export default function Home() {
       player.add(weapons);
       const game = {
         scene, camera, renderer, petTextures, enemyAtlas, enemyBackAtlas, floorMaterial: floorMat, floorTextures: { default: floorTexture, kitchen: kitchenFloorTexture, office: officeFloorTexture }, blockMaterial: blockMat, stageProps, player, weapons, enemies: [] as Enemy[], orbs: [] as Orb[], pickups: [] as Pickup[], hazards: [] as Hazard[], effects: [] as CombatFx[], obstacles, timer: new THREE.Timer(), keys: new Set<string>(),
-        running: false, elapsed: 0, routeTime: 0, spawnTimer: 0, attackTimer: 0, bossesSpawned: 0, bossesDefeated: 0, outbreakTriggered: false, outbreakRemaining: 0, specialActive: false, specialCooldown: 0, pulseTimer: 0, chainTimer: 0, flameTimer: 0, boomerangTimer: 0, shutdownTimer: 0, helperTimer: 0, helperAttackTimer: 0, helperMesh: null, helperPet: null, playerHitFx: 0, specialFx: 0, alertFx: 0, shake: 0, spawnGrace: 4, combo: 0, comboTimer: 0, rerolls: 1,
+        running: false, elapsed: 0, routeTime: 0, spawnTimer: 0, attackTimer: 0, bossesSpawned: 0, bossesDefeated: 0, outbreakTriggered: false, outbreakRemaining: 0, specialActive: false, teamAllies: [] as TeamAlly[], teamSpecialStartedAt: 0, teamFinaleDone: false, teamBannerPhase: -1, specialCooldown: 0, pulseTimer: 0, chainTimer: 0, flameTimer: 0, boomerangTimer: 0, shutdownTimer: 0, helperTimer: 0, helperAttackTimer: 0, helperMesh: null, helperPet: null, playerHitFx: 0, specialFx: 0, alertFx: 0, shake: 0, spawnGrace: 4, combo: 0, comboTimer: 0, rerolls: 1,
       };
       gameRef.current = game;
 
@@ -1210,6 +1256,7 @@ export default function Home() {
 
   function clearRound(game: NonNullable<typeof gameRef.current>) {
     setTeamSkillName("");
+    for (const ally of game.teamAllies) game.scene.remove(ally.mesh);
     for (const enemy of game.enemies) game.scene.remove(enemy.mesh);
     for (const orb of game.orbs) game.scene.remove(orb.mesh);
     for (const pickup of game.pickups) game.scene.remove(pickup.mesh);
@@ -1221,6 +1268,7 @@ export default function Home() {
     game.pickups = [];
     game.hazards = [];
     game.effects = [];
+    game.teamAllies = [];
     game.elapsed = 0;
     game.routeTime = 0;
     game.spawnTimer = 0;
@@ -1230,6 +1278,9 @@ export default function Home() {
     game.outbreakTriggered = false;
     game.outbreakRemaining = 0;
     game.specialActive = false;
+    game.teamSpecialStartedAt = 0;
+    game.teamFinaleDone = false;
+    game.teamBannerPhase = -1;
     game.specialCooldown = 0;
     game.pulseTimer = 1.2;
     game.chainTimer = 1.8;
@@ -1603,9 +1654,9 @@ export default function Home() {
       beam.renderOrder = 9;
       addEffect(game, { object: beam, life, maxLife: life });
     };
-    addBeam(pet.color, 0.028, 0.52);
+    spawnRadialImpact(game, from, pet.color, 0.22);
     if (pet.id === "relay") {
-      addBeam(0x7fdcff, 0.07);
+      addBeam(0x7fdcff, 0.09, 0.78);
       const branches = [...game.enemies].filter((candidate) => candidate !== enemy).sort((a, b) => a.mesh.position.distanceTo(end) - b.mesh.position.distanceTo(end)).slice(0, 2);
       for (const branch of branches) {
         const branchEnd = branch.mesh.position.clone().setY(0.5);
@@ -1613,57 +1664,57 @@ export default function Home() {
         const arc = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.045, branchVector.length(), 6), new THREE.MeshBasicMaterial({ color: 0x66e7ff, transparent: true, opacity: 0.8 }));
         arc.position.copy(end).lerp(branchEnd, 0.5);
         arc.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), branchVector.normalize());
-        addEffect(game, { object: arc, life: 0.3, maxLife: 0.3 });
+        addEffect(game, { object: arc, life: 0.72, maxLife: 0.72 });
       }
     } else if (pet.id === "tidal") {
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 22; i++) {
         const drop = new THREE.Mesh(new THREE.SphereGeometry(0.08 + (i % 3) * 0.025, 8, 6), new THREE.MeshBasicMaterial({ color: i % 2 ? 0x8cf4ff : 0x2cbfff, transparent: true, opacity: 0.88 }));
         const angle = i / 14 * Math.PI * 2;
-        drop.position.copy(end);
-        addEffect(game, { object: drop, life: 0.42, maxLife: 0.42, velocity: new THREE.Vector3(Math.cos(angle) * 3, 0.5 + (i % 4) * 0.28, Math.sin(angle) * 3), grow: 0.35 });
+        drop.position.copy(start).addScaledVector(vector, i / 22).add(new THREE.Vector3(0, Math.sin(i * 1.7) * 0.18, 0));
+        addEffect(game, { object: drop, life: 0.9, maxLife: 0.9, velocity: new THREE.Vector3(Math.cos(angle) * 0.8, 0.3 + (i % 4) * 0.16, Math.sin(angle) * 0.8), grow: 0.28 });
       }
       statsRef.current.hp = Math.min(statsRef.current.maxHp, statsRef.current.hp + 4);
     } else if (pet.id === "kiln") {
-      addBeam(0xff6b24, 0.16, 0.34);
-      for (let i = 0; i < 18; i++) {
+      addBeam(0xff6b24, 0.2, 0.84);
+      for (let i = 0; i < 26; i++) {
         const ember = new THREE.Mesh(new THREE.OctahedronGeometry(0.08 + (i % 3) * 0.035, 0), new THREE.MeshBasicMaterial({ color: i % 2 ? 0xffd45e : 0xff4b24, transparent: true, opacity: 0.95 }));
         ember.position.copy(start).addScaledVector(vector, Math.random());
-        addEffect(game, { object: ember, life: 0.48, maxLife: 0.48, velocity: new THREE.Vector3((Math.random() - 0.5) * 1.2, 0.7, (Math.random() - 0.5) * 1.2), grow: 0.5 });
+        addEffect(game, { object: ember, life: 0.92, maxLife: 0.92, velocity: new THREE.Vector3((Math.random() - 0.5) * 1.2, 0.7, (Math.random() - 0.5) * 1.2), grow: 0.5 });
       }
     } else if (pet.id === "vector") {
-      addBeam(0xfff1a8, 0.12, 0.38);
-      addBeam(0xffffff, 0.035, 0.38);
+      addBeam(0xfff1a8, 0.15, 0.9);
+      addBeam(0xffffff, 0.045, 0.9);
       game.shake = Math.max(game.shake, 0.5);
     } else if (pet.id === "anvil") {
       const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.52, 0), new THREE.MeshStandardMaterial({ color: 0xa99b86, roughness: 0.9 }));
       rock.position.copy(end).add(new THREE.Vector3(0, 2.5, 0));
-      addEffect(game, { object: rock, life: 0.48, maxLife: 0.48, velocity: new THREE.Vector3(0, -5.2, 0), grow: 0.15 });
-      spawnRadialImpact(game, enemy.mesh.position, 0xd5c8ae, 0.75);
+      addEffect(game, { object: rock, life: 0.9, maxLife: 0.9, velocity: new THREE.Vector3(0, -4.4, 0), grow: 0.15 });
+      spawnRadialImpact(game, enemy.mesh.position, 0xd5c8ae, 1.2);
     } else if (pet.id === "lumen") {
       for (let i = 0; i < 5; i++) {
         const vine = new THREE.Mesh(new THREE.TorusKnotGeometry(0.2 + i * 0.035, 0.025, 28, 5), new THREE.MeshBasicMaterial({ color: i % 2 ? 0xb6ff68 : 0x58c66e, transparent: true, opacity: 0.78 }));
         vine.position.copy(end).add(new THREE.Vector3(0, i * 0.08, 0));
         vine.rotation.x = Math.PI / 2;
-        addEffect(game, { object: vine, life: 0.58, maxLife: 0.58, grow: 1.4 });
+        addEffect(game, { object: vine, life: 1.05, maxLife: 1.05, grow: 1.4 });
       }
     } else if (pet.id === "parcel") {
       for (let i = 0; i < 6; i++) {
         const block = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.34, 0.34), new THREE.MeshStandardMaterial({ color: i % 2 ? 0x9c78ff : 0x513c82, emissive: 0x20153d, emissiveIntensity: 0.8 }));
         block.position.copy(end).add(new THREE.Vector3((i % 3 - 1) * 0.32, 1.7 + Math.floor(i / 3) * 0.55, (i % 2 - 0.5) * 0.3));
-        addEffect(game, { object: block, life: 0.5, maxLife: 0.5, velocity: new THREE.Vector3(0, -4.1, 0), grow: 0.2 });
+        addEffect(game, { object: block, life: 1, maxLife: 1, velocity: new THREE.Vector3(0, -3.3, 0), grow: 0.2 });
       }
     } else if (pet.id === "chroma") {
       for (let i = 0; i < 4; i++) {
         const cage = new THREE.Mesh(new THREE.BoxGeometry(0.8 + i * 0.25, 0.8 + i * 0.25, 0.8 + i * 0.25), new THREE.MeshBasicMaterial({ color: 0x3b8dff, wireframe: true, transparent: true, opacity: 0.72 }));
         cage.position.copy(end);
         cage.rotation.set(i * 0.28, i * 0.42, 0);
-        addEffect(game, { object: cage, life: 0.55, maxLife: 0.55, grow: 0.65 });
+        addEffect(game, { object: cage, life: 1.08, maxLife: 1.08, grow: 0.65 });
       }
       enemy.speed *= 0.72;
     } else {
       const voidCore = new THREE.Mesh(new THREE.SphereGeometry(0.65, 18, 12), new THREE.MeshBasicMaterial({ color: 0x09000f, transparent: true, opacity: 0.94 }));
       voidCore.position.copy(end);
-      addEffect(game, { object: voidCore, life: 0.62, maxLife: 0.62, grow: 1.7 });
+      addEffect(game, { object: voidCore, life: 1.2, maxLife: 1.2, grow: 1.7 });
       for (const nearby of game.enemies) {
         if (nearby.mesh.position.distanceTo(enemy.mesh.position) < 5) nearby.mesh.position.lerp(enemy.mesh.position, 0.28);
       }
@@ -1909,59 +1960,115 @@ export default function Home() {
     s.special = 0;
     game.specialActive = true;
     game.specialCooldown = 12;
-    game.specialFx = 3.4;
+    game.specialFx = 6.5;
+    game.teamSpecialStartedAt = game.elapsed;
+    game.teamFinaleDone = false;
+    game.teamBannerPhase = -1;
     playSfx("special");
     game.shake = 1.8;
-    showCinematic("team", 1150);
-    const allies: THREE.Group[] = [];
+    showCinematic("team", 1400);
+    for (const previous of game.teamAllies) game.scene.remove(previous.mesh);
+    game.teamAllies = [];
     PETS.forEach((pet, index) => {
       const ally = makePet(pet.id, game.petTextures, 0.66);
       const angle = (index / PETS.length) * Math.PI * 2;
-      ally.position.copy(game.player.position).add(new THREE.Vector3(Math.cos(angle) * 3.25, 0, Math.sin(angle) * 3.25));
-      resolveObstacleCollisions(ally.position, 0.45, game.obstacles);
+      const formation = game.player.position.clone().add(new THREE.Vector3(Math.cos(angle) * 3.25, 0, Math.sin(angle) * 3.25));
+      resolveObstacleCollisions(formation, 0.45, game.obstacles);
+      const entry = game.player.position.clone().add(new THREE.Vector3(Math.cos(angle) * 8.5, 0, Math.sin(angle) * 8.5));
+      ally.position.copy(entry);
       ally.scale.setScalar(0.01);
       game.scene.add(ally);
-      allies.push(ally);
-      window.setTimeout(() => ally.scale.setScalar(1), 980 + index * 34);
-      window.setTimeout(() => {
-        if (gameRef.current !== game || !game.running || !ally.parent) return;
-        if (game.enemies.length === 0) spawnEnemy(game);
-        const target = [...game.enemies].sort((a, b) => a.mesh.position.distanceTo(ally.position) - b.mesh.position.distanceTo(ally.position))[index % Math.min(game.enemies.length, 4)];
-        if (!target) return;
-        setTeamSkillName(`${pet.name} // ${PET_SKILLS[pet.id].name}`);
-        const attackDirection = target.mesh.position.clone().sub(ally.position).setY(0).normalize();
-        setPetFacing(ally, attackDirection, true, game.elapsed + index * 0.08);
-        const origin = ally.position.clone();
-        ally.position.addScaledVector(attackDirection, pet.id === "vector" ? 0.35 : 1.05);
-        ally.position.y = pet.id === "anvil" ? 0.08 : 0.32;
-        ally.rotation.z = (index % 2 === 0 ? -1 : 1) * (pet.id === "kiln" ? 0.28 : 0.16);
-        ally.scale.setScalar(pet.id === "anvil" ? 1.28 : 1.16);
-        spawnAllySignature(game, ally.position, target, pet);
-        const signaturePower = pet.id === "vector" || pet.id === "kiln" ? 1.9 : pet.id === "anvil" || pet.id === "parcel" ? 1.65 : 1.45;
-        target.hp -= target.boss ? target.maxHp * (pet.id === "vector" ? 0.038 : 0.026) : s.damage * signaturePower;
-        window.setTimeout(() => { ally.position.copy(origin); ally.rotation.z = 0; ally.scale.setScalar(1); }, 520);
-        if (target.hp <= 0) killEnemy(game, target);
-      }, 1450 + index * 260);
-      window.setTimeout(() => game.scene.remove(ally), 5000);
+      game.teamAllies.push({ mesh: ally, pet, entry, formation, target: null, struck: false });
     });
-    window.setTimeout(() => {
-      if (gameRef.current !== game || !game.running) return;
-      setTeamSkillName("FULL LINK // COMPILE BURST");
-      spawnRadialImpact(game, game.player.position, 0x66e7ff, 0.72);
-      allies.forEach((ally, index) => {
-        const angle = (index / allies.length) * Math.PI * 2;
-        ally.position.copy(game.player.position).add(new THREE.Vector3(Math.cos(angle) * 1.5, 0, Math.sin(angle) * 1.5));
-      });
-      game.shake = 2.3;
+    syncHud(game);
+  }
+
+  function updateTeamSpecial(game: NonNullable<typeof gameRef.current>) {
+    if (!game.specialActive || !game.teamAllies.length) return;
+    const localTime = game.elapsed - game.teamSpecialStartedAt;
+    const s = statsRef.current;
+    const smooth = (value: number) => {
+      const t = clamp(value, 0, 1);
+      return t * t * (3 - 2 * t);
+    };
+    const squadNames = [
+      "CHAIN RELAY / TIDAL PATCH / FORGE BREATH",
+      "VECTOR LANCE / MAGNETIC QUAKE / ROOTLIGHT SNARE",
+      "TOOL DROP / PRISM FREEZE / EVENT HORIZON",
+    ];
+
+    game.teamAllies.forEach((ally, index) => {
+      const squad = Math.floor(index / 3);
+      const slot = index % 3;
+      const attackAt = 1.72 + squad * 1.02 + slot * 0.12;
+      const entryProgress = smooth((localTime - 0.72 - index * 0.035) / 0.52);
+      if (localTime < attackAt - 0.24) {
+        ally.mesh.position.copy(ally.entry).lerp(ally.formation, entryProgress);
+        const entryDirection = ally.formation.clone().sub(ally.entry).normalize();
+        setPetFacing(ally.mesh, entryDirection, entryProgress < 0.98, game.elapsed + index * 0.11);
+        ally.mesh.scale.setScalar(Math.max(0.01, entryProgress * (1 + Math.sin(entryProgress * Math.PI) * 0.18)));
+        return;
+      }
+
+      if (!ally.target || !game.enemies.includes(ally.target)) {
+        if (!game.enemies.length) spawnEnemy(game);
+        ally.target = [...game.enemies].sort((a, b) => a.mesh.position.distanceTo(ally.formation) - b.mesh.position.distanceTo(ally.formation))[index % Math.max(1, Math.min(game.enemies.length, 5))] ?? null;
+      }
+      const targetPosition = ally.target?.mesh.position ?? game.player.position;
+      const attackDirection = targetPosition.clone().sub(ally.formation).setY(0).normalize();
+      const strikeProgress = clamp((localTime - attackAt) / 0.62, 0, 1);
+      const windup = clamp((localTime - (attackAt - 0.24)) / 0.24, 0, 1);
+      const lunge = Math.sin(strikeProgress * Math.PI);
+      ally.mesh.position.copy(ally.formation).addScaledVector(attackDirection, lunge * (ally.pet.id === "vector" ? 0.45 : 1.2));
+      ally.mesh.position.y = ally.pet.id === "anvil" ? Math.sin(strikeProgress * Math.PI) * 0.5 : lunge * 0.22;
+      ally.mesh.scale.setScalar(1 + lunge * (ally.pet.id === "anvil" ? 0.34 : 0.18) - (1 - windup) * 0.08);
+      setPetFacing(ally.mesh, attackDirection, true, game.elapsed + index * 0.13);
+      const art = ally.mesh.getObjectByName("pet-art") as THREE.Sprite | undefined;
+      if (art) (art.material as THREE.SpriteMaterial).rotation += lunge * (index % 2 ? -0.12 : 0.12);
+
+      if (!ally.struck && localTime >= attackAt + 0.12 && ally.target) {
+        ally.struck = true;
+        spawnAllySignature(game, ally.mesh.position, ally.target, ally.pet);
+        const signaturePower = ally.pet.id === "vector" || ally.pet.id === "kiln" ? 1.9 : ally.pet.id === "anvil" || ally.pet.id === "parcel" ? 1.65 : 1.45;
+        ally.target.hp -= ally.target.boss ? ally.target.maxHp * (ally.pet.id === "vector" ? 0.038 : 0.026) : s.damage * signaturePower;
+        playSfx(squad === 0 ? "shock" : squad === 1 ? "flame" : "special");
+        game.shake = Math.max(game.shake, 0.55 + squad * 0.16);
+        if (ally.target.hp <= 0) killEnemy(game, ally.target);
+      }
+    });
+
+    const currentSquad = localTime < 2.74 ? 0 : localTime < 3.76 ? 1 : localTime < 4.78 ? 2 : 3;
+    if (currentSquad !== game.teamBannerPhase) {
+      game.teamBannerPhase = currentSquad;
+      setTeamSkillName(currentSquad < 3 ? squadNames[currentSquad] : "FULL LINK // COMPILE BURST");
+    }
+    if (localTime >= 4.92 && !game.teamFinaleDone) {
+      game.teamFinaleDone = true;
+      spawnRadialImpact(game, game.player.position, 0x66e7ff, 2.25);
+      game.shake = 2.5;
+      playSfx("special");
       for (const enemy of [...game.enemies]) {
-        enemy.hp -= enemy.boss ? enemy.maxHp * 0.22 + 120 : 9999;
+        enemy.hp -= enemy.boss ? enemy.maxHp * 0.18 + 100 : s.damage * 4.2;
         if (enemy.hp <= 0) killEnemy(game, enemy);
       }
       syncHud(game);
+    }
+    if (localTime >= 5.35) {
+      const exitProgress = smooth((localTime - 5.35) / 0.85);
+      game.teamAllies.forEach((ally, index) => {
+        const angle = (index / game.teamAllies.length) * Math.PI * 2;
+        const exit = game.player.position.clone().add(new THREE.Vector3(Math.cos(angle) * 10, 0.2, Math.sin(angle) * 10));
+        ally.mesh.position.copy(ally.formation).lerp(exit, exitProgress);
+        ally.mesh.scale.setScalar(Math.max(0.01, 1 - exitProgress));
+        setPetFacing(ally.mesh, exit.clone().sub(ally.formation).normalize(), true, game.elapsed + index * 0.1);
+      });
+    }
+    if (localTime >= 6.25) {
+      for (const ally of game.teamAllies) game.scene.remove(ally.mesh);
+      game.teamAllies = [];
       game.specialActive = false;
-      window.setTimeout(() => setTeamSkillName(""), 720);
-    }, 4050);
-    syncHud(game);
+      setTeamSkillName("");
+    }
   }
 
   function updateGame(game: NonNullable<typeof gameRef.current>, dt: number) {
@@ -1982,6 +2089,7 @@ export default function Home() {
     if (game.comboTimer <= 0) game.combo = 0;
     game.specialCooldown = Math.max(0, game.specialCooldown - dt);
     game.playerHitFx = Math.max(0, game.playerHitFx - dt);
+    updateTeamSpecial(game);
     game.shake = Math.max(0, game.shake - dt * 2.4);
     const nextBossTime = BOSS_TIMES[game.bossesSpawned];
     if (nextBossTime !== undefined && game.routeTime >= nextBossTime && !game.enemies.some((enemy) => enemy.boss)) spawnBoss(game);
@@ -2013,8 +2121,9 @@ export default function Home() {
     if (game.keys.has("d") || game.keys.has("arrowright")) direction.x += 1;
     direction.x += joystick.current.x;
     direction.z += joystick.current.y;
-    const walking = direction.lengthSq() > 0.02;
-    if (walking) {
+    const requestedMovement = direction.lengthSq() > 0.02;
+    let movedDistance = 0;
+    if (requestedMovement) {
       direction.normalize();
       const previousPosition = game.player.position.clone();
       game.player.position.addScaledVector(direction, s.moveSpeed * dt);
@@ -2023,9 +2132,11 @@ export default function Home() {
       if (positionBlocked(game.player.position, 0.62, game.obstacles)) game.player.position.copy(previousPosition);
       game.player.position.x = clamp(game.player.position.x, -54, 54);
       game.player.position.z = clamp(game.player.position.z, -54, 54);
+      movedDistance = game.player.position.distanceTo(previousPosition);
     }
-    setPetFacing(game.player, direction, walking, game.elapsed);
-    game.player.position.y = walking ? Math.abs(Math.sin(game.elapsed * 7)) * 0.025 : 0;
+    const walking = movedDistance > 0.0005;
+    setPetFacing(game.player, direction, walking, game.elapsed, movedDistance);
+    game.player.position.y = 0;
     game.weapons.rotation.y += dt * (2.5 / s.attackDelay);
 
     const playerPos = game.player.position;
@@ -2096,7 +2207,7 @@ export default function Home() {
       }
       const bossAura = enemy.mesh.getObjectByName("boss-aura");
       if (bossAura) bossAura.rotation.z += dt * 1.9;
-      if (distance < enemy.radius + 0.58 && game.elapsed - enemy.lastHit > 0.9) {
+      if (!game.specialActive && distance < enemy.radius + 0.58 && game.elapsed - enemy.lastHit > 0.9) {
         s.hp -= enemy.boss ? 15 : Math.min(6, 4.5 + stage * 0.08);
         enemy.lastHit = game.elapsed;
         game.playerHitFx = 0.28;

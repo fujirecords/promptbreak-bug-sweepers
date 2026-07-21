@@ -51,7 +51,7 @@ button { font: inherit; }
 @keyframes alarm-border { 50% { border-color: rgba(255,49,94,.15); box-shadow: inset 0 0 30px rgba(255,24,67,.18); } }
 @keyframes threat-pulse { to { opacity: .25; transform: scaleY(.45); } }
 
-.team-arrival { color: white; background: linear-gradient(180deg, rgba(1,9,16,.08), rgba(1,9,16,.72)); animation: team-scene 1.8s ease both; }
+.team-arrival { color: white; background: linear-gradient(180deg, rgba(1,9,16,.08), rgba(1,9,16,.72)); animation: team-scene 1.4s ease both; }
 .team-flare { position: absolute; left: 50%; top: 50%; width: 80vmax; height: 80vmax; transform: translate(-50%, -50%); background: repeating-conic-gradient(from 0deg, rgba(102,231,255,.24) 0 2deg, transparent 2deg 10deg), radial-gradient(circle, white 0 1%, #66e7ff 2%, rgba(38,170,255,.25) 9%, transparent 30%); animation: flare-spin 1.1s ease-out both; }
 .team-cutins { position: absolute; inset: 6vh -3vw 21vh; display: grid; grid-template-columns: repeat(9, 1fr); gap: 0; transform: skewX(-8deg); }
 .team-cutin { min-width: 0; position: relative; overflow: hidden; border-left: 2px solid var(--pet-color); background: linear-gradient(180deg, color-mix(in srgb, var(--pet-color) 48%, #06101a), rgba(3,10,16,.88)); box-shadow: inset 0 0 35px rgba(255,255,255,.12); clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%); opacity: 0; animation: cutin-arrive .62s cubic-bezier(.18,.9,.2,1.18) var(--delay) forwards; }
@@ -63,9 +63,9 @@ button { font: inherit; }
 .team-command h2 { margin: 1px 0; font: 800 clamp(29px, 4vw, 56px) "Chakra Petch"; letter-spacing: -.04em; text-shadow: 0 0 28px rgba(102,231,255,.7); }
 .team-command p { margin: 0; color: #c3edf6; font-size: 11px; }
 .team-skill-callout { position: absolute; z-index: 55; left: 50%; top: 23%; transform: translateX(-50%) skewX(-7deg); min-width: min(420px, 78vw); padding: 9px 18px; border-left: 4px solid #66e7ff; border-right: 4px solid #ff315e; color: #fff; background: rgba(2, 12, 18, .88); box-shadow: 0 0 28px rgba(102,231,255,.25); text-align: center; font: 800 13px "Chakra Petch"; letter-spacing: .12em; animation: combo-pop .2s ease-out; }
-.team-convergence { position: absolute; z-index: 3; inset: 0; animation: convergence .52s 1.05s ease-in both; }
+.team-convergence { position: absolute; z-index: 3; inset: 0; animation: convergence .48s .72s ease-in both; }
 .team-convergence i { position: absolute; left: 50%; top: 50%; width: 46vmax; height: 5px; transform-origin: 0 50%; transform: rotate(var(--ray)) translateX(2vw); background: linear-gradient(90deg, white, var(--pet-color), transparent); box-shadow: 0 0 18px var(--pet-color); }
-.team-impact-word { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%) skewX(-10deg); opacity: 0; color: white; font: 800 clamp(38px, 8vw, 105px) "Chakra Petch"; letter-spacing: -.06em; text-shadow: 5px 5px 0 #167ca8, 0 0 50px #66e7ff; animation: impact-word .58s 1.12s cubic-bezier(.16,.92,.2,1.25) both; }
+.team-impact-word { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%) skewX(-10deg); opacity: 0; color: white; font: 800 clamp(38px, 8vw, 105px) "Chakra Petch"; letter-spacing: -.06em; text-shadow: 5px 5px 0 #167ca8, 0 0 50px #66e7ff; animation: impact-word .52s .82s cubic-bezier(.16,.92,.2,1.25) both; }
 @keyframes convergence { from { opacity: 0; transform: scale(1.4); } 50% { opacity: 1; } to { opacity: 0; transform: scale(.06); } }
 @keyframes impact-word { 0% { opacity: 0; transform: translate(-50%, -50%) skewX(-10deg) scale(3); } 38%, 75% { opacity: 1; transform: translate(-50%, -50%) skewX(-10deg) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) skewX(-10deg) scale(.92); } }
 @keyframes team-scene { 0% { opacity: 0; } 10%, 82% { opacity: 1; } 100% { opacity: 0; } }
