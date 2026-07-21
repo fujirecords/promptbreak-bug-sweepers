@@ -144,7 +144,7 @@ The biggest pass/fail communication risk is that the game does not use an OpenAI
 
 ```text
 LIVE DEMO URL: https://promptbreak-bug-sweepers.k-fuji.chatgpt.site
-REPOSITORY URL: [ADD AFTER APPROVAL]
+REPOSITORY URL: https://github.com/fujirecords/promptbreak-bug-sweepers
 PUBLIC YOUTUBE URL: [ADD AFTER APPROVAL]
 PRIMARY CODEX /feedback SESSION ID: 019f7b07-3aa7-7f33-86c8-fdbcf26ff4b5
 ENTRANT / TEAM NAME: [ADD]
@@ -168,7 +168,7 @@ Choose an original Patchling, clear software-themed bug outbreaks, build a stack
 I built this Build Week edition through an iterative Codex collaboration using GPT-5.6. Human direction defined the problem, product decisions, character identities, and quality bar; Codex helped implement, inspect, test, and repair the Three.js game, responsive UI, combat systems, original character integration, and security controls.
 
 Try the demo: https://promptbreak-bug-sweepers.k-fuji.chatgpt.site
-Source / judging repository: [REPOSITORY URL]
+Source / judging repository: https://github.com/fujirecords/promptbreak-bug-sweepers
 
 Built for OpenAI Build Week 2026.
 ```
@@ -268,7 +268,7 @@ Codex, GPT-5.6, TypeScript, React, Three.js, Vite, Cloudflare Workers
 
 ```text
 Demo: https://promptbreak-bug-sweepers.k-fuji.chatgpt.site
-Repository: [REPOSITORY URL]
+Repository: https://github.com/fujirecords/promptbreak-bug-sweepers
 Video: [PUBLIC YOUTUBE URL]
 Primary Codex /feedback Session ID: 019f7b07-3aa7-7f33-86c8-fdbcf26ff4b5
 ```
