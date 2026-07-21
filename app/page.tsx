@@ -369,6 +369,11 @@ function setPetFacing(group: THREE.Group, direction: THREE.Vector3, walking: boo
     if (Math.abs(direction.x) > Math.abs(direction.z) * 0.7) facing = direction.x < 0 ? "left" : "right";
     else facing = direction.z < 0 ? "back" : "front";
     sprite.userData.facing = facing;
+    sprite.userData.diagonal = Math.abs(direction.x) > 0.25 && Math.abs(direction.z) > 0.25;
+    sprite.userData.travelX = direction.x;
+  } else {
+    sprite.userData.diagonal = false;
+    sprite.userData.travelX = 0;
   }
   const frame = walking ? Math.floor(elapsed * 7.5) % 2 : 0;
   if (sprite.userData.frame !== frame || (sprite.material as THREE.SpriteMaterial).map !== sprite.userData.maps[sprite.userData.facing][frame]) {
@@ -377,20 +382,22 @@ function setPetFacing(group: THREE.Group, direction: THREE.Vector3, walking: boo
     (sprite.material as THREE.SpriteMaterial).needsUpdate = true;
   }
   const base = sprite.userData.baseScale as number;
-  const cadence = walking ? 15 : 3.2;
+  const cadence = walking ? 17 : 5.2;
   const step = Math.sin(elapsed * cadence);
   const weightShift = Math.sin(elapsed * cadence * 0.5);
   const material = sprite.material as THREE.SpriteMaterial;
   if (walking) {
-    sprite.position.y = 0.025 + Math.abs(step) * 0.085;
-    sprite.position.x = weightShift * 0.025;
-    sprite.scale.set(base * (1 + Math.abs(step) * 0.018), base * (1 - Math.abs(step) * 0.025), 1);
-    material.rotation = weightShift * 0.055;
+    const diagonal = Boolean(sprite.userData.diagonal);
+    const travelX = Number(sprite.userData.travelX) || 0;
+    sprite.position.y = 0.025 + Math.abs(step) * 0.1;
+    sprite.position.x = weightShift * 0.035;
+    sprite.scale.set(base * (diagonal ? 0.94 : 1) * (1 + Math.abs(step) * 0.022), base * (1 - Math.abs(step) * 0.03), 1);
+    material.rotation = weightShift * 0.07 - travelX * (diagonal ? 0.045 : 0.018);
   } else {
-    sprite.position.y = 0.012 + Math.max(0, step) * 0.014;
-    sprite.position.x = weightShift * 0.006;
-    sprite.scale.set(base * (1 + step * 0.006), base * (1 - step * 0.006), 1);
-    material.rotation = weightShift * 0.009;
+    sprite.position.y = 0.018 + Math.abs(step) * 0.04;
+    sprite.position.x = weightShift * 0.018;
+    sprite.scale.set(base * (1 + Math.abs(step) * 0.012), base * (1 - Math.abs(step) * 0.015), 1);
+    material.rotation = weightShift * 0.025;
   }
 }
 
@@ -519,7 +526,7 @@ export default function Home() {
     range: 3.1,
     weapons: 2,
     attackDelay: 0.48,
-    moveSpeed: 5.4,
+    moveSpeed: 6.15,
     magnet: 2.4,
     pulseLevel: 0,
     chainLevel: 0,
@@ -1331,7 +1338,7 @@ export default function Home() {
     clearRound(game);
     const maxHp = 100 + hpRank * 12;
     const petId = metaRef.current.selectedPet;
-    statsRef.current = { hp: maxHp, maxHp, level: 1, xp: 0, nextXp: 14, kills: 0, special: petId === "hollow" ? 28 : 0, damage: 12 * (1 + powerRank * 0.09), range: 2.35, weapons: petId === "parcel" ? 1 : 0, attackDelay: petId === "chroma" ? 0.66 : 0.72, moveSpeed: 5.4, magnet: petId === "lumen" ? 3.5 : 2.4, pulseLevel: petId === "anvil" || petId === "tidal" ? 1 : 0, chainLevel: petId === "relay" || petId === "chroma" ? 1 : 0, flameLevel: petId === "kiln" ? 1 : 0, boomerangLevel: 0, shutdownLevel: 0, helperLevel: 0 };
+    statsRef.current = { hp: maxHp, maxHp, level: 1, xp: 0, nextXp: 14, kills: 0, special: petId === "hollow" ? 28 : 0, damage: 12 * (1 + powerRank * 0.09), range: 2.35, weapons: petId === "parcel" ? 1 : 0, attackDelay: petId === "chroma" ? 0.66 : 0.72, moveSpeed: 6.15, magnet: petId === "lumen" ? 3.5 : 2.4, pulseLevel: petId === "anvil" || petId === "tidal" ? 1 : 0, chainLevel: petId === "relay" || petId === "chroma" ? 1 : 0, flameLevel: petId === "kiln" ? 1 : 0, boomerangLevel: 0, shutdownLevel: 0, helperLevel: 0 };
     if (petId === "vector") { statsRef.current.damage *= 1.16; statsRef.current.range *= 1.18; }
     if (petId === "tidal") { statsRef.current.maxHp += 10; statsRef.current.hp += 10; }
     game.scene.remove(game.player);

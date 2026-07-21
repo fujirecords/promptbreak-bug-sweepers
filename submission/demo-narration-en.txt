@@ -1,31 +1,15 @@
-1
-00:00:00,000 --> 00:00:06,000
 Generative AI saves time, but every run creates an awkward waiting pocket.
 
-2
-00:00:06,000 --> 00:00:13,000
 PromptBreak turns that dead time into a quick, playable debugging break.
 
-3
-00:00:13,000 --> 00:00:25,000
 Choose an original Patchling, pick a software-themed mission, and move while attacks fire automatically.
 
-4
-00:00:25,000 --> 00:00:36,000
 Each short run adds upgrades such as Force Quit Wave, Power Patch, and wider attack scope.
 
-5
-00:00:36,000 --> 00:00:46,500
 The progress bar turns the build into a story: clear bugs, survive critical phases, and defeat two bosses before the task completes.
 
-6
-00:00:46,500 --> 00:00:49,500
 When the Patch Parade is charged, all nine Patchlings arrive and perform their signature attacks together.
 
-7
-00:00:49,500 --> 00:00:54,000
 I used Codex with GPT-5.6 to iterate on gameplay, animation, responsive UI, security checks, and the original character system.
 
-8
-00:00:54,000 --> 00:00:56,500
 PromptBreak makes waiting feel intentional: AI works, you play, then you return refreshed.
