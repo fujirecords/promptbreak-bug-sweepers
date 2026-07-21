@@ -377,9 +377,21 @@ function setPetFacing(group: THREE.Group, direction: THREE.Vector3, walking: boo
     (sprite.material as THREE.SpriteMaterial).needsUpdate = true;
   }
   const base = sprite.userData.baseScale as number;
-  const step = Math.sin(elapsed * (walking ? 15 : 2.4));
-  sprite.position.y = walking ? Math.abs(step) * 0.035 : 0.008 + Math.max(0, step) * 0.006;
-  sprite.scale.set(base * (walking ? 1 : 1 + step * 0.004), base * (walking ? 1 : 1 - step * 0.004), 1);
+  const cadence = walking ? 15 : 3.2;
+  const step = Math.sin(elapsed * cadence);
+  const weightShift = Math.sin(elapsed * cadence * 0.5);
+  const material = sprite.material as THREE.SpriteMaterial;
+  if (walking) {
+    sprite.position.y = 0.025 + Math.abs(step) * 0.085;
+    sprite.position.x = weightShift * 0.025;
+    sprite.scale.set(base * (1 + Math.abs(step) * 0.018), base * (1 - Math.abs(step) * 0.025), 1);
+    material.rotation = weightShift * 0.055;
+  } else {
+    sprite.position.y = 0.012 + Math.max(0, step) * 0.014;
+    sprite.position.x = weightShift * 0.006;
+    sprite.scale.set(base * (1 + step * 0.006), base * (1 - step * 0.006), 1);
+    material.rotation = weightShift * 0.009;
+  }
 }
 
 function cropBugTexture(atlasTexture: THREE.Texture, kind: number, mirror = false) {
