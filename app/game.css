@@ -219,35 +219,39 @@ button { font: inherit; }
   .boss-breach h2 { font-size: 38px; text-align: center; }
   .boss-breach p { width: 82vw; text-align: center; }
   .joystick { display: block; }
-  .title-screen { padding: 24px; align-items: flex-end; background: linear-gradient(0deg, rgba(2,8,13,.98) 0%, rgba(2,8,13,.72) 58%, rgba(2,8,13,.08) 100%); }
-  .title-copy { width: 100%; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .title-screen { padding: 76px 20px max(18px, env(safe-area-inset-bottom)); align-items: flex-start; overflow-y: auto; background: linear-gradient(0deg, rgba(2,8,13,.98) 0%, rgba(2,8,13,.72) 58%, rgba(2,8,13,.08) 100%); }
+  .title-copy { width: 100%; padding-bottom: 0; }
   .title-copy h1 { line-height: .8; }
+  .title-copy h1 span, .title-copy h1 strong { font-size: clamp(48px, 16vw, 64px); }
+  .kicker { margin-bottom: 14px; font-size: 10px; }
   .subtitle { margin: 18px 0 20px; font-size: 12px; }
   .pet-row { display: flex; overflow-x: auto; padding-top: 4px; padding-bottom: 4px; }
   .stage-row { overflow-x: auto; padding-bottom: 3px; }
   .pet-card { min-width: 68px; width: 68px; height: 76px; }
   .pet-card .pet-portrait { width: 47px; height: 47px; }
   .start-button { min-width: min(100%, 280px); }
-  .title-status { top: max(72px, env(safe-area-inset-top)); right: 20px; bottom: auto; }
+  .title-status { display: none; }
   .language-tabs { top: max(15px, env(safe-area-inset-top)); right: 15px; }
   .language-tabs button { padding: 7px 10px; }
-  .kill-count { margin-right: 0; }
-  .boss-clock { top: 80px; width: min(78vw, 430px); }
+  .kill-count { display: none; }
+  .boss-clock { top: 112px; width: calc(100vw - 30px); padding-inline: 12px; }
   .pause-button { top: max(62px, env(safe-area-inset-top)); right: 15px; }
-  .combo-counter { top: 142px; }
-  .integrity { top: 78px; grid-template-columns: auto 100px auto; }
+  .combo-counter { top: 180px; }
+  .integrity { top: 68px; grid-template-columns: auto minmax(72px, 24vw) auto; }
   .special-button { width: 88px; height: 88px; }
-  .upgrade-grid { display: flex; flex-direction: column; width: min(92vw, 430px); max-height: 57vh; overflow-x: hidden; overflow-y: auto; gap: 8px; padding: 3px; }
+  .modal { padding: 18px 14px; }
+  .modal > p:not(.kicker) { margin-bottom: 16px; }
+  .upgrade-grid { display: flex; flex-direction: column; width: min(100%, 430px); max-height: 62dvh; overflow-x: hidden; overflow-y: auto; gap: 8px; padding: 3px; }
   .upgrade-grid button { min-height: 104px; padding: 12px 14px; display: grid; grid-template-columns: 50px minmax(0, 1fr) auto; grid-template-rows: auto auto; grid-template-areas: "icon title number" "icon description apply"; column-gap: 12px; align-items: center; }
   .upgrade-grid em { grid-area: number; align-self: start; }
   .upgrade-icon { grid-area: icon; width: 46px; height: 46px; margin: 0; font-size: 24px; }
   .upgrade-grid b { grid-area: title; margin: 0; align-self: end; font-size: 16px; }
   .upgrade-grid span { grid-area: description; margin: 3px 0 0; align-self: start; font-size: 11px; }
   .upgrade-grid i { grid-area: apply; margin: 0; align-self: end; }
-  .meta-workshop { overflow-x: auto; }
+  .meta-workshop { flex-wrap: wrap; overflow: visible; }
   .meta-workshop button { flex: 0 0 auto; }
-  .local-ranking { overflow-x: auto; }
-  .local-ranking label, .local-ranking > div { flex: 0 0 auto; }
+  .local-ranking { flex-wrap: wrap; overflow: visible; }
+  .local-ranking label, .local-ranking > div { flex: 1 1 150px; min-width: 0; }
   .level-modal h2 { font-size: 42px; }
   .result-modal h2 { font-size: 38px; }
   .result-stats span { min-width: 92px; padding: 10px; }
