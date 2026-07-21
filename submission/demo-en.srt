@@ -1,0 +1,31 @@
+1
+00:00:00,000 --> 00:00:07,000
+Generative AI saves time, but every run creates an awkward waiting pocket.
+
+2
+00:00:07,000 --> 00:00:13,000
+PromptBreak turns that dead time into a quick, playable debugging break.
+
+3
+00:00:13,000 --> 00:00:20,000
+Choose an original Patchling and move while attacks fire automatically.
+
+4
+00:00:20,000 --> 00:00:29,000
+Upgrade with Force Quit Wave, Power Patch, and wider attack scope.
+
+5
+00:00:29,000 --> 00:00:35,000
+Clear bugs, survive critical phases, and defeat two bosses before the task completes.
+
+6
+00:00:35,000 --> 00:00:40,000
+Charge Patch Parade: all nine Patchlings perform their signature attacks together.
+
+7
+00:00:40,000 --> 00:00:49,000
+Built with Codex and GPT-5.6 through rapid gameplay, UI, and security iteration.
+
+8
+00:00:49,000 --> 00:00:56,500
+AI works. You play. Then you return refreshed.
