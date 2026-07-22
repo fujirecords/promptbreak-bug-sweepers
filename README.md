@@ -1,5 +1,7 @@
 # PromptBreak: Bug Sweepers
 
+![PromptBreak: Bug Sweepers — nine original Patchlings performing their signature attacks](./public/social-preview.png)
+
 A bilingual 2.5D browser action game that turns generative-AI waiting time into a quick, satisfying debug break.
 
 ## The problem
